@@ -240,8 +240,8 @@ export default function NotesPage() {
     }
   }, [filter, folders]);
 
-  const NavBtn = ({ f, icon, label, count }: { f: Filter; icon: React.ReactNode; label: string; count?: number | null }) => (
-    <button className={`nf-item ${sameFilter(f, filter) ? "is-active" : ""}`} onClick={() => setFilter(f)}>
+  const navBtn = (f: Filter, icon: React.ReactNode, label: string, count?: number | null, key?: string) => (
+    <button key={key} className={`nf-item ${sameFilter(f, filter) ? "is-active" : ""}`} onClick={() => setFilter(f)}>
       {icon}
       <span className="grow truncate">{label}</span>
       {count != null && <span className="nf-count">{count}</span>}
@@ -273,9 +273,9 @@ export default function NotesPage() {
       <div className="notes-grid">
         <nav className="nf" aria-label="Folders and tags">
           <h4 className="nf-h">Folders</h4>
-          <NavBtn f={{ kind: "all" }} icon={<FileText size={16} />} label="All notes" count={allCount} />
-          <NavBtn f={{ kind: "pinned" }} icon={<Pin size={16} />} label="Pinned" />
-          <NavBtn f={{ kind: "starred" }} icon={<Star size={16} />} label="Starred" />
+          {navBtn({ kind: "all" }, <FileText size={16} />, "All notes", allCount)}
+          {navBtn({ kind: "pinned" }, <Pin size={16} />, "Pinned")}
+          {navBtn({ kind: "starred" }, <Star size={16} />, "Starred")}
           {folders.map((f) =>
             renaming?.id === f.id ? (
               <form key={f.id} className="nf-edit" onSubmit={(e) => (e.preventDefault(), void renameFolder())}>
@@ -284,7 +284,7 @@ export default function NotesPage() {
               </form>
             ) : (
               <div key={f.id} className="nf-row">
-                <NavBtn f={{ kind: "folder", id: f.id }} icon={<Folder size={16} />} label={f.name} count={f.note_count} />
+                {navBtn({ kind: "folder", id: f.id }, <Folder size={16} />, f.name, f.note_count)}
                 <span className="nf-tools">
                   <IconButton size="sm" label={`Rename ${f.name}`} onClick={() => setRenaming({ id: f.id, name: f.name })}>
                     <Pencil size={13} />
@@ -296,7 +296,7 @@ export default function NotesPage() {
               </div>
             ),
           )}
-          <NavBtn f={{ kind: "none" }} icon={<Inbox size={16} />} label="No folder" />
+          {navBtn({ kind: "none" }, <Inbox size={16} />, "No folder")}
           {newFolder !== null ? (
             <form className="nf-edit" onSubmit={(e) => (e.preventDefault(), void addFolder(newFolder))}>
               <FolderPlus size={16} />
@@ -314,7 +314,7 @@ export default function NotesPage() {
             <>
               <h4 className="nf-h">Tags</h4>
               {tags.map((t) => (
-                <NavBtn key={t.tag} f={{ kind: "tag", tag: t.tag }} icon={<Hash size={15} />} label={t.tag} count={t.count} />
+                navBtn({ kind: "tag", tag: t.tag }, <Hash size={15} />, t.tag, t.count, t.tag)
               ))}
             </>
           )}
