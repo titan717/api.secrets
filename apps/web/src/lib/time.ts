@@ -1,8 +1,10 @@
+import { useSettings } from "../stores/settings";
+
 const sameDay = (a: Date, b: Date) =>
   a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
 export function clock(iso: string): string {
-  return new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: !useSettings.getState().clock24 });
 }
 
 /** Conversation list timestamp: time today, "Yesterday", weekday, or date. */

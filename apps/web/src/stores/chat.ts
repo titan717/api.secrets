@@ -6,6 +6,7 @@ import { uuid } from "../lib/id";
 import { loadLastSync, loadOutbox, saveLastSync, saveOutbox, type PendingMsg } from "../lib/outbox";
 import { realtime, type WsStatus } from "../lib/realtime";
 import { useSession } from "./session";
+import { useSettings } from "./settings";
 import { toast } from "./toast";
 
 const PAGE = 40;
@@ -486,6 +487,7 @@ export const useChat = create<ChatState>((set, get) => {
     },
 
     sendTyping: (conversationId) => {
+      if (!useSettings.getState().privacy.typing) return;
       const now = Date.now();
       if ((lastTypingSent[conversationId] ?? 0) > now - 3000) return;
       lastTypingSent[conversationId] = now;

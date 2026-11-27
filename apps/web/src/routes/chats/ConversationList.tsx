@@ -9,6 +9,7 @@ import { listTime } from "../../lib/time";
 import { api, errorMessage } from "../../lib/api";
 import { useUserSearch } from "../../lib/useUserSearch";
 import { toast } from "../../stores/toast";
+import { MomentsRow } from "../moments/MomentsRow";
 import { Avatar, CountBadge, GroupAvatar, IconButton, Wordmark, EmptyState, Button } from "../../ui";
 
 function ConvRow({ c, active }: { c: Conversation; active: boolean }) {
@@ -56,33 +57,6 @@ function ConvRow({ c, active }: { c: Conversation; active: boolean }) {
   );
 }
 
-function Stories() {
-  const users = useChat((s) => s.users);
-  const me = useSession((s) => s.user);
-  const nav = useNavigate();
-  const people = Object.values(users).filter((u) => u.id !== me?.id).slice(0, 10);
-  return (
-    <div className="stories" aria-label="Moments">
-      <button className="story" onClick={() => nav("/moments")}>
-        <span className="story-ring is-me">
-          <Avatar name={me?.display_name ?? "You"} src={me?.avatar_url} seed={me?.id} size={54} />
-          <span className="story-add">
-            <Plus size={12} strokeWidth={3} />
-          </span>
-        </span>
-        <span className="story-name">Your moment</span>
-      </button>
-      {people.map((u) => (
-        <button key={u.id} className="story" onClick={() => nav(`/u/${u.username}`)}>
-          <span className="story-ring">
-            <Avatar name={u.display_name} src={u.avatar_url} seed={u.id} size={54} />
-          </span>
-          <span className="story-name truncate">{u.display_name.split(" ")[0]}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
 
 export function ConversationList({ activeId }: { activeId?: string }) {
   const conversations = useChat((s) => s.conversations);
@@ -150,7 +124,7 @@ export function ConversationList({ activeId }: { activeId?: string }) {
         </IconButton>
       </div>
       <div className="list-scroll">
-        {!q && <Stories />}
+        {!q && <MomentsRow />}
         <div className="list-filters">
           {(["all", "unread", "groups"] as const).map((f) => (
             <button key={f} className={`chip ${filter === f ? "is-active" : ""}`} onClick={() => setFilter(f)}>
