@@ -30,6 +30,8 @@ async function createPg(url: string): Promise<Db> {
   const pg = (await import("pg")).default;
   // Keep bigint (COUNT) as JS numbers; ids are uuids so no precision concern.
   pg.types.setTypeParser(20, (v: string) => Number(v));
+  // DATE columns stay "YYYY-MM-DD" (avoid local-timezone shifts).
+  pg.types.setTypeParser(1082, (v: string) => v);
   const isLocal = /@(localhost|127\.0\.0\.1|\[::1\])(:\d+)?\//.test(url) || /sslmode=disable/.test(url);
   const pool = new pg.Pool({
     connectionString: url,

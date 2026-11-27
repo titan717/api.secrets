@@ -205,6 +205,25 @@ CREATE TABLE IF NOT EXISTS notes (
 CREATE INDEX IF NOT EXISTS notes_user_idx ON notes(user_id, updated_at DESC);
 `,
   },
+  {
+    id: "006_tasks",
+    sql: `
+CREATE TABLE IF NOT EXISTS tasks (
+  id uuid PRIMARY KEY,
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title text NOT NULL,
+  notes text NOT NULL DEFAULT '',
+  due_date date,
+  due_time text,
+  priority text NOT NULL DEFAULT 'normal',
+  done boolean NOT NULL DEFAULT false,
+  done_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS tasks_user_due_idx ON tasks(user_id, done, due_date);
+`,
+  },
 ];
 
 export async function migrate(db: Db, log: (m: string) => void): Promise<void> {
