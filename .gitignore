@@ -8,3 +8,4 @@ dist
 .pglite
 data/
 coverage
+pnpm-lock.yaml
