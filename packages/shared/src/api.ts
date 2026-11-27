@@ -2,8 +2,8 @@
  * REST contract for apps/api. Base path /v1. Auth: `Authorization: Bearer <token>`.
  * All bodies JSON unless noted. Errors: { error, message } with 4xx/5xx.
  */
-import type { Conversation, Dock, DockMember, DockRole, DockVisibility, MessageView, Session, User, Channel, Attachment } from "./types";
-import type { MessageEnvelope } from "./envelope";
+import type { Conversation, Dock, DockMember, DockRole, DockVisibility, MessageView, Session, User, Channel } from "./types";
+import type { MessageEnvelope, Attachment } from "./envelope";
 
 export interface Routes {
   "POST /v1/auth/signup": { body: { username: string; password: string; display_name?: string }; res: Session };
