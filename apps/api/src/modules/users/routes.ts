@@ -3,7 +3,7 @@ import { db } from "../../db/index.js";
 import { badRequest, notFound } from "../../lib/http.js";
 import { userView, USER_COLS } from "../../lib/views.js";
 import { requireAuth, normalizeUsername } from "../auth/service.js";
-import { onlineAmong } from "../realtime/bus.js";
+import { onlineAmong, lastSeenOf, publish, profileAudience } from "../realtime/bus.js";
 
 function optUrl(v: unknown, field: string): string | null | undefined {
   if (v === undefined) return undefined;
@@ -50,7 +50,14 @@ export async function userRoutes(app: FastifyInstance) {
       await db.query(`UPDATE users SET ${sets.join(", ")} WHERE id = $${vals.length}`, vals);
     }
     const row = await db.one(`SELECT ${USER_COLS} FROM users u WHERE u.id = $1`, [req.auth.id]);
-    return userView(row);
+    const user = userView(row);
+    if (sets.length) {
+      const id = req.auth.id;
+      profileAudience(id)
+        .then((aud) => publish(aud, { t: "user.update", user }))
+        .catch((err) => req.log.warn({ err }, "user.update fan-out failed"));
+    }
+    return user;
   });
 
   app.get("/v1/users/search", async (req) => {
@@ -73,8 +80,10 @@ export async function userRoutes(app: FastifyInstance) {
       .map((s) => s.trim())
       .filter(Boolean)
       .slice(0, 200);
-    const online = new Set(await onlineAmong(ids));
-    return ids.map((id) => ({ user_id: id, online: online.has(id) }));
+    const valid = ids.filter((id) => /^[0-9a-f-]{36}$/i.test(id));
+    const online = new Set(await onlineAmong(valid));
+    const seen = await lastSeenOf(valid);
+    return valid.map((id) => ({ user_id: id, online: online.has(id), last_seen: seen.get(id) ?? null }));
   });
 
   app.get("/v1/users/:username", async (req) => {

@@ -64,3 +64,23 @@ export async function seed(log: (m: string) => void) {
   await db.query(`INSERT INTO dock_members (dock_id, user_id) SELECT $1, id FROM users WHERE is_bot = false ON CONFLICT DO NOTHING`, [dockId]);
   log("seeded dock Secrets HQ (#general, #announcements)");
 }
+
+/** The @secrets bot opens a DM with every new user. */
+export async function welcomeDm(userId: string, name: string) {
+  if (!botId) return;
+  const key = [botId, userId].sort().join(":");
+  const id = uuid();
+  await db.tx(async (q) => {
+    await q.query(`INSERT INTO conversations (id, kind, dm_key, created_by) VALUES ($1, 'dm', $2, $3) ON CONFLICT (dm_key) DO NOTHING`, [id, key, botId]);
+    await q.query(`INSERT INTO conversation_members (conversation_id, user_id) VALUES ($1, $2), ($1, $3) ON CONFLICT DO NOTHING`, [id, botId, userId]);
+  });
+  const conv = await db.one<{ id: string }>(`SELECT id FROM conversations WHERE dm_key = $1`, [key]);
+  const text = `Hey ${name}, welcome to Secrets 🤫\n\nThis is your space. Find friends with search, start a group, or hop into Secrets HQ to meet everyone.`;
+  const { ciphertext, nonce } = sealBody({ text });
+  const r = await db.query(
+    `INSERT INTO messages (id, conversation_id, sender_id, device_id, ciphertext, nonce, client_msg_id) VALUES ($1,$2,$3,'server',$4,$5,$6)
+     ON CONFLICT DO NOTHING RETURNING created_at`,
+    [uuid(), conv!.id, botId, ciphertext, nonce, `welcome-${userId}`],
+  );
+  if (r.length) await db.query(`UPDATE conversations SET last_message_at = $2 WHERE id = $1`, [conv!.id, r[0].created_at]);
+}

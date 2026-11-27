@@ -141,6 +141,10 @@ CREATE TABLE IF NOT EXISTS pins (
 );
 `,
   },
+  {
+    id: "003_last_seen",
+    sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen_at timestamptz`,
+  },
 ];
 
 export async function migrate(db: Db, log: (m: string) => void): Promise<void> {

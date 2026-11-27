@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import type { WebSocket } from "ws";
 import type { ClientFrame, ServerFrame } from "@secrets/shared";
 import { verifyToken, type AuthUser } from "../auth/service.js";
-import { addConn, removeConn, publish, contactsOf, onlineAmong, markOnline, markOffline, heartbeat, conversationAudience, type Conn } from "./bus.js";
+import { addConn, removeConn, publish, contactsOf, onlineAmong, markOnline, markOffline, heartbeat, conversationAudience, touchLastSeen, lastSeenOf, type Conn } from "./bus.js";
 import { access } from "../conversations/service.js";
 import { sendMessage, markRead, react, messagesSince } from "../messages/service.js";
 import { HttpError } from "../../lib/http.js";
@@ -19,6 +19,10 @@ export function closeConn(c: Conn) {
     /* ignore */
   }
 }
+
+/** presence frame + last_seen (ISO, additive field). */
+const presenceFrame = (user_id: string, online: boolean, last_seen: string | null): ServerFrame =>
+  ({ t: "presence", user_id, online, last_seen }) as ServerFrame;
 
 const typingSeen = new Map<string, number>();
 
@@ -104,7 +108,8 @@ export async function realtimeRoutes(app: FastifyInstance) {
       const last = removeConn(conn);
       if (last) {
         await markOffline(user.id);
-        publish(await contactsOf(user.id).catch(() => []), { t: "presence", user_id: user.id, online: false });
+        const last_seen = await touchLastSeen(user.id).catch(() => new Date().toISOString());
+        publish(await contactsOf(user.id).catch(() => []), presenceFrame(user.id, false, last_seen));
       }
     });
 
@@ -118,11 +123,15 @@ export async function realtimeRoutes(app: FastifyInstance) {
         const first = addConn(conn);
         send({ t: "ready", user_id: u.id });
         const contacts = await contactsOf(u.id);
+        const now = await touchLastSeen(u.id).catch(() => new Date().toISOString());
         if (first) {
           await markOnline(u.id);
-          publish(contacts, { t: "presence", user_id: u.id, online: true });
+          publish(contacts, presenceFrame(u.id, true, now));
         }
-        for (const id of await onlineAmong(contacts)) send({ t: "presence", user_id: id, online: true });
+        // Snapshot of every contact: online ones and last_seen for offline ones.
+        const online = new Set(await onlineAmong(contacts));
+        const seen = await lastSeenOf(contacts);
+        for (const id of contacts) send(presenceFrame(id, online.has(id), seen.get(id) ?? null));
         for (const s of pending.splice(0)) await handle(s);
       })
       .catch((e) => {

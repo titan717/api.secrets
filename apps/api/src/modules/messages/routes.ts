@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { requireAuth } from "../auth/service.js";
-import { sendMessage, listMessages, react, editMessage, deleteMessage, visibleMessage, setPin, listPins } from "./service.js";
+import { sendMessage, listMessages, react, editMessage, deleteMessage, visibleMessage, setPin, listPins, searchMessages } from "./service.js";
 import { messageViews } from "../../lib/views.js";
 
 export async function messageRoutes(app: FastifyInstance) {
@@ -16,6 +16,12 @@ export async function messageRoutes(app: FastifyInstance) {
     const { message, created } = await sendMessage(req.auth.id, req.auth.device_id, (req.params as any).id, b);
     reply.code(created ? 201 : 200);
     return message;
+  });
+
+  // Text search in a conversation: ?q=&limit=&before=<messageId>
+  app.get("/v1/conversations/:id/search", async (req) => {
+    const q = (req.query ?? {}) as any;
+    return searchMessages(req.auth.id, (req.params as any).id, q.q, q.limit, q.before);
   });
 
   // Extra: pinned messages in a conversation.

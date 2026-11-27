@@ -21,7 +21,7 @@ export const MSG_COLS =
   "m.id, m.seq, m.conversation_id, m.sender_id, m.device_id, m.ciphertext, m.nonce, m.client_msg_id, m.created_at, m.edited_at, m.deleted_at";
 
 function rawMessageView(r: any, reactions: Reaction[], pinned: boolean): MessageView {
-  const v: MessageView & { pinned: boolean } = {
+  const v: MessageView = {
     id: r.id,
     conversation_id: r.conversation_id,
     sender_id: r.sender_id,
@@ -33,7 +33,7 @@ function rawMessageView(r: any, reactions: Reaction[], pinned: boolean): Message
     reactions,
     edited_at: r.edited_at ? iso(r.edited_at) : null,
     deleted: !!r.deleted_at,
-    pinned, // extra (not in shared contract yet)
+    pinned,
   };
   return v;
 }

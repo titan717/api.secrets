@@ -7,6 +7,8 @@ import { USERNAME_RE, normalizeUsername, hashPassword, verifyPassword, signSessi
 import { joinDefaultDocks } from "../docks/service.js";
 import { dropDevice } from "../realtime/bus.js";
 import { closeConn } from "../realtime/ws.js";
+import { authLimit } from "../../lib/rate.js";
+import { welcomeDm } from "../../db/seed.js";
 
 function validateUsername(raw: unknown): string {
   const u = normalizeUsername(str(raw, "username")!);
@@ -31,6 +33,7 @@ async function createSession(userId: string, username: string, userAgent: string
 
 export async function authRoutes(app: FastifyInstance) {
   app.post("/v1/auth/signup", async (req, reply) => {
+    authLimit(`signup:${req.ip}`);
     const b = (req.body ?? {}) as any;
     const username = validateUsername(b.username);
     const password = validatePassword(b.password);
@@ -44,11 +47,13 @@ export async function authRoutes(app: FastifyInstance) {
       throw e;
     }
     await joinDefaultDocks(id).catch((e) => req.log.warn({ err: e }, "auto-join failed"));
+    await welcomeDm(id, display_name).catch((e) => req.log.warn({ err: e }, "welcome dm failed"));
     reply.code(201);
     return createSession(id, username, req.headers["user-agent"]);
   });
 
   app.post("/v1/auth/login", async (req) => {
+    authLimit(`login:${req.ip}`);
     const b = (req.body ?? {}) as any;
     if (typeof b.username !== "string" || typeof b.password !== "string") throw badRequest("username and password are required");
     const username = normalizeUsername(b.username);

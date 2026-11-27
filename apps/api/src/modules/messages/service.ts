@@ -4,6 +4,7 @@ import { badRequest, forbidden, notFound, uuid, isUuid, assertId } from "../../l
 import { MSG_COLS, messageViews, messageViewById } from "../../lib/views.js";
 import { publish, conversationAudience } from "../realtime/bus.js";
 import { access, memberIds } from "../conversations/service.js";
+import { sendLimit } from "../../lib/rate.js";
 
 const MAX_CIPHERTEXT = 64 * 1024;
 const MAX_TEXT = 8000;
@@ -48,6 +49,7 @@ export async function sendMessage(
   input: SendInput,
   opts: { system?: boolean } = {},
 ): Promise<{ message: MessageView; created: boolean }> {
+  if (!opts.system) sendLimit(senderId);
   const a = await access(conversationId, senderId, "write");
   if (!opts.system) assertCanPost(a);
   const body = opts.system ? openBody({ ciphertext: String(input.ciphertext), nonce: null }) : validateEnvelope(input);
@@ -247,4 +249,45 @@ export async function listPins(userId: string, conversationId: unknown): Promise
     [a.conv.id],
   );
   return messageViews(rows);
+}
+
+/**
+ * Text search inside one conversation, newest first.
+ * PROTOTYPE: ciphertext is plaintext JSON, so we pre-filter in SQL and confirm via openBody.
+ * With E2EE this moves client-side.
+ */
+export async function searchMessages(viewerId: string, conversationId: unknown, qRaw: unknown, limitRaw?: unknown, before?: unknown) {
+  const a = await access(conversationId, viewerId, "read");
+  const q = typeof qRaw === "string" ? qRaw.trim() : "";
+  if (!q) throw badRequest("q is required");
+  if (q.length > 200) throw badRequest("q is too long");
+  const limit = Math.min(Math.max(Number(limitRaw) || 30, 1), 100);
+  let maxSeq = Number.MAX_SAFE_INTEGER;
+  if (before) {
+    if (!isUuid(before)) throw badRequest("before must be a message id");
+    const c = await db.one(`SELECT seq FROM messages WHERE id = $1 AND conversation_id = $2`, [before, a.conv.id]);
+    if (!c) throw badRequest("before cursor not found in this conversation");
+    maxSeq = Number(c.seq);
+  }
+  const like = `%${q.toLowerCase().replace(/[\\%_]/g, (c) => "\\" + c)}%`;
+  const needle = q.toLowerCase();
+  const out: any[] = [];
+  let cursor = maxSeq;
+  // Page through SQL candidates until we have `limit` confirmed hits (bounded).
+  for (let round = 0; round < 5 && out.length < limit; round++) {
+    const rows = await db.query(
+      `SELECT ${MSG_COLS} FROM messages m WHERE m.conversation_id = $1 AND m.deleted_at IS NULL AND m.seq < $2
+       AND lower(m.ciphertext) LIKE $3 ORDER BY m.seq DESC LIMIT $4`,
+      [a.conv.id, cursor, like, limit * 2],
+    );
+    if (!rows.length) break;
+    for (const r of rows) {
+      const text = openBody(r).text ?? "";
+      if (text.toLowerCase().includes(needle)) out.push(r);
+      if (out.length >= limit) break;
+    }
+    cursor = Number(rows[rows.length - 1].seq);
+    if (rows.length < limit * 2) break;
+  }
+  return messageViews(out);
 }

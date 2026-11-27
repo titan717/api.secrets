@@ -47,6 +47,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(websocket, { options: { maxPayload: 256 * 1024 } });
 
   app.setErrorHandler((err: any, req, reply) => {
+    if (err instanceof HttpError && (err as any).retryAfter) reply.header("retry-after", String((err as any).retryAfter));
     if (err instanceof HttpError) return reply.code(err.status).send({ error: err.error, message: err.message });
     if (err?.validation || err?.statusCode === 400) return reply.code(400).send({ error: "bad_request", message: err.message });
     if (err?.code === "FST_ERR_CTP_BODY_TOO_LARGE" || err?.statusCode === 413)

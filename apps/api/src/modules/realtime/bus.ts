@@ -164,3 +164,29 @@ export async function contactsOf(userId: string): Promise<string[]> {
   );
   return rows.map((r) => r.user_id);
 }
+
+/** Who should hear about profile changes: dm/group contacts + co-members of docks (capped). */
+export async function profileAudience(userId: string): Promise<string[]> {
+  const rows = await db.query<{ user_id: string }>(
+    `SELECT DISTINCT cm2.user_id FROM conversation_members cm1
+     JOIN conversation_members cm2 ON cm2.conversation_id = cm1.conversation_id
+     WHERE cm1.user_id = $1
+     UNION
+     SELECT DISTINCT d2.user_id FROM dock_members d1 JOIN dock_members d2 ON d2.dock_id = d1.dock_id
+     WHERE d1.user_id = $1
+     LIMIT 5000`,
+    [userId],
+  );
+  return rows.map((r) => r.user_id);
+}
+
+export async function touchLastSeen(userId: string): Promise<string> {
+  const r = await db.query<{ last_seen_at: Date }>(`UPDATE users SET last_seen_at = now() WHERE id = $1 RETURNING last_seen_at`, [userId]);
+  return new Date(r[0]?.last_seen_at ?? Date.now()).toISOString();
+}
+
+export async function lastSeenOf(userIds: string[]): Promise<Map<string, string | null>> {
+  if (!userIds.length) return new Map();
+  const rows = await db.query<{ id: string; last_seen_at: Date | null }>(`SELECT id, last_seen_at FROM users WHERE id = ANY($1::uuid[])`, [userIds]);
+  return new Map(rows.map((r) => [r.id, r.last_seen_at ? new Date(r.last_seen_at).toISOString() : null]));
+}
