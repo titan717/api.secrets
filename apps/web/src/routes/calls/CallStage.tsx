@@ -4,6 +4,7 @@ import { AlertTriangle, Maximize2, Mic, MicOff, Minimize2, MonitorUp, MonitorX, 
 import { Avatar, Button, Spinner } from "../../ui";
 import { useCalls } from "../../stores/calls";
 import { useChat } from "../../stores/chat";
+import { useSession } from "../../stores/session";
 import { useCallRoom, type TileInfo } from "../../lib/voice/useCallRoom";
 import { formatDuration } from "../../lib/voice/format";
 import "../../styles/calls.css";
@@ -20,7 +21,9 @@ function useNow(active: boolean) {
 
 function Tile({ tile, version }: { tile: TileInfo; version: number }) {
   const ref = useRef<HTMLVideoElement>(null);
-  const user = useChat((s) => s.users[tile.userId]);
+  const known = useChat((s) => s.users[tile.userId]);
+  const me = useSession((s) => s.user);
+  const user = tile.isLocal ? (me ?? known) : known;
   const p = tile.participant;
   const pub = p.getTrackPublication(tile.screen ? Track.Source.ScreenShare : Track.Source.Camera);
   const track = pub?.track && !pub.isMuted ? pub.track : undefined;

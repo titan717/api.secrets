@@ -16,7 +16,7 @@ function preview(c: AiChat) {
   for (let i = c.items.length - 1; i >= 0; i--) {
     const it = c.items[i];
     if (it.kind === "user") return it.text;
-    const t = it.parts.find((p) => p.type === "text");
+    const t = [...it.parts].reverse().find((p) => p.type === "text");
     if (t && t.type === "text" && t.text.trim()) return t.text.replace(/[#*_`>]/g, "").trim();
   }
   return c.systemPrompt ? `Prompt: ${c.systemPrompt}` : "No messages yet";

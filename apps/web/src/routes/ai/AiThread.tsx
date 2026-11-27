@@ -148,8 +148,10 @@ export function AiThread({ chatId, compact, leading, actions, onOpenSettings }: 
         <img src={MASCOT} alt="" className="ai-head-ghost" width={34} height={34} />
         <div className="grow">
           <div className="ai-thread-title truncate">{chat.title}</div>
-          <button type="button" className="ai-model-chip truncate" onClick={onOpenSettings} title="Change model">
-            {PROVIDER_LABEL[provider]} · {model}
+          <button type="button" className="ai-model-chip" onClick={onOpenSettings} title="Change model">
+            <span className="truncate">
+              {PROVIDER_LABEL[provider]} · {model}
+            </span>
             {agent && <span className="ai-agent-dot">Agent</span>}
           </button>
         </div>

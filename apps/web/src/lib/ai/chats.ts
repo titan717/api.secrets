@@ -100,7 +100,7 @@ export const useAiChats = create<ChatsState>()(
 );
 
 function titleFrom(text: string) {
-  const t = text.replace(/\s+/g, " ").trim();
+  const t = text.replace(/[*_`#>~]+/g, "").replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/\s+/g, " ").trim();
   return t.length > 48 ? `${t.slice(0, 46)}…` : t || "New chat";
 }
 
