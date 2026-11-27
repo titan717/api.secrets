@@ -30,7 +30,7 @@ export type ServerFrame =
   | { t: "conversation.upsert"; conversation: Conversation }
   | { t: "conversation.remove"; conversation_id: ID }
   | { t: "dock.upsert"; dock: Dock }
-  | { t: "presence"; user_id: ID; online: boolean }
+  | { t: "presence"; user_id: ID; online: boolean; last_seen?: string | null }
   | { t: "user.update"; user: User }
   | { t: "error"; message: string; client_msg_id?: string };
 
