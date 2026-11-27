@@ -20,9 +20,9 @@ const PRIMARY = [
   { to: "/moments", label: "Moments", icon: Sparkle },
 ];
 const SECONDARY = [
-  { to: "/notes", label: "Notes", icon: NotebookPen },
-  { to: "/tasks", label: "Tasks", icon: ListChecks },
-  { to: "/vault", label: "Vault", icon: Vault },
+  { to: "/notes", label: "Notes", icon: NotebookPen, soon: false },
+  { to: "/tasks", label: "Tasks", icon: ListChecks, soon: false },
+  { to: "/vault", label: "Vault", icon: Vault, soon: true },
 ];
 
 export function useUnreadTotal() {
@@ -98,7 +98,7 @@ function Sidebar() {
           <NavLink key={i.to} to={i.to} className="nav-item">
             <i.icon size={19} strokeWidth={1.9} />
             <span className="grow">{i.label}</span>
-            <span className="soon-tag">Soon</span>
+            {i.soon && <span className="soon-tag">Soon</span>}
           </NavLink>
         ))}
       </div>
