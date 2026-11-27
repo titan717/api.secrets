@@ -14,7 +14,7 @@
  * Secrets tools (read_conversation, summarize_dock_channel, draft_message) are executed by
  * the AI service calling apps/api with the user's session token from header x-secrets-token.
  */
-export type AiProvider = "gemini" | "openrouter";
+export type AiProvider = "gemini" | "openrouter" | "mock"; // mock = keyless demo provider
 export type EffortLevel = "low" | "medium" | "high" | "custom";
 export interface Effort { level: EffortLevel; maxSteps?: number; thinkingBudget?: number }
 
