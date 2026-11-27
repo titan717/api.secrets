@@ -48,7 +48,7 @@ export async function attachmentRoutes(app: FastifyInstance) {
     const id = (req.params as any).id;
     if (!isUuid(id)) throw notFound("Attachment not found");
     if (req.headers["if-none-match"] === `"${id}"`) return reply.code(304).send();
-    const row = await db.one<{ mime: string; data: Buffer | Uint8Array; name: string | null }>(`SELECT mime, data, name FROM attachments WHERE id = $1`, [id]);
+    const row = await db.one<{ mime: string; data: Buffer | Uint8Array; name: string | null }>(`SELECT mime, data, name FROM attachments WHERE id = $1 AND private = false`, [id]);
     if (!row) throw notFound("Attachment not found");
     const data = Buffer.isBuffer(row.data) ? row.data : Buffer.from(row.data);
     reply

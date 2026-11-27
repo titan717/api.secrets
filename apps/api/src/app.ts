@@ -20,6 +20,7 @@ import { realtimeRoutes } from "./modules/realtime/ws.js";
 import { momentRoutes } from "./modules/moments/routes.js";
 import { noteRoutes } from "./modules/notes/routes.js";
 import { taskRoutes } from "./modules/tasks/routes.js";
+import { vaultRoutes } from "./modules/vault/routes.js";
 
 function findWebDist(): string | null {
   const here = path.dirname(fileURLToPath(import.meta.url));
@@ -72,6 +73,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(momentRoutes);
   await app.register(noteRoutes);
   await app.register(taskRoutes);
+  await app.register(vaultRoutes);
 
   const webDist = findWebDist();
   if (webDist) {

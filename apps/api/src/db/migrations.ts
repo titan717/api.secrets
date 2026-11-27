@@ -224,6 +224,24 @@ CREATE TABLE IF NOT EXISTS tasks (
 CREATE INDEX IF NOT EXISTS tasks_user_due_idx ON tasks(user_id, done, due_date);
 `,
   },
+  {
+    id: "007_vault",
+    sql: `
+ALTER TABLE attachments ADD COLUMN IF NOT EXISTS private boolean NOT NULL DEFAULT false;
+CREATE TABLE IF NOT EXISTS vault_items (
+  id uuid PRIMARY KEY,
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  attachment_id uuid NOT NULL REFERENCES attachments(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  mime text NOT NULL,
+  size integer NOT NULL,
+  nonce text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS vault_items_user_idx ON vault_items(user_id, created_at DESC);
+`,
+  },
 ];
 
 export async function migrate(db: Db, log: (m: string) => void): Promise<void> {

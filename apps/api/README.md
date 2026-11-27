@@ -51,6 +51,10 @@ src/
     docks/           docks, roles, invites, channels
     attachments/     image upload (bytea in DB), public GET
     realtime/        /v1/ws, event bus (local or Redis), presence
+    moments/         24h stories, visibility, feed, view receipts
+    notes/           markdown notes, folders, tags
+    tasks/           to-dos, inline !priority, today/upcoming
+    vault/           private file store (≤ 25 MB per file)
 ```
 
 ## REST endpoints
@@ -92,6 +96,35 @@ extras: `GET /v1/messages/:id`, `PATCH /v1/messages/:id {ciphertext, nonce}` (se
 extras: `GET /v1/docks/by-handle/:handle`, `POST /v1/docks/join-by-code {invite_code}`.
 Roles: owner/admin manage channels, members and invites; only owner deletes, changes visibility, transfers ownership.
 Private docks are invisible (404) to non-members. Public dock channels are readable by non-members; posting requires joining.
+
+**Search** — `GET /v1/conversations/:id/search?q=&limit=≤100&before=<msgId>` → `MessageView[]` (newest first, case-insensitive on body text).
+
+**Moments** (stories, expire 24 h after posting) — Moment = `{ id, user_id, kind: "image"|"text", text, background, attachment: Attachment|null, visibility, user_ids? (author only), created_at, expires_at, viewed, view_count? (author only) }`.
+Visibility: `all_friends` (people you share a dm/group with), `public` (anyone, incl. via profile), `only` (listed `user_ids`), `except` (friends minus `user_ids`).
+`POST /v1/moments {text?, attachment_id?, background?, visibility?, user_ids?}` (image: upload via `/v1/attachments` first; omitted visibility uses your default) ·
+`GET /v1/moments/feed` → `[{ user, moments (oldest→newest), has_unseen, latest_at }]` (you first, then unseen, then recent) ·
+`GET /v1/moments/mine` · `GET /v1/users/:username/moments` · `GET /v1/moments/:id` · `POST /v1/moments/:id/view` ·
+`GET /v1/moments/:id/views` (author) → `[{ user, viewed_at }]` · `DELETE /v1/moments/:id` ·
+`GET|PUT /v1/moments/settings {visibility, user_ids}` (default audience, "My Story" settings).
+WS (additive): `moment.new {moment}`, `moment.remove {moment_id, user_id}`, `moment.view {moment_id, user, viewed_at}` (to author).
+
+**Notes** — Note = `{ id, folder_id, title, body (markdown), tags[], pinned, starred, created_at, updated_at }`.
+`GET /v1/notes?folder_id=<id|none>&tag=&q=&pinned=1&starred=1&limit=` (pinned first, then recently edited) · `POST /v1/notes` ·
+`GET|PATCH|DELETE /v1/notes/:id` (pin/star toggles don't bump `updated_at`) · `GET /v1/notes/tags` → `[{tag, count}]` ·
+`GET|POST /v1/notes/folders {name}` → `{ id, name, position, note_count, created_at }` · `PATCH|DELETE /v1/notes/folders/:id` (deleting keeps notes, unfiled).
+Tags are normalised lowercase, no `#`, ≤ 20 per note.
+
+**Tasks** — Task = `{ id, title, notes, due_date ("YYYY-MM-DD"|null), due_time ("HH:MM"|null), priority: "high"|"normal"|"low", done, done_at, created_at, updated_at }`.
+Inline priority tokens are stripped from titles: `!high` `!h` `!urgent` `!!` → high, `!low` `!l` → low, `!normal` `!medium` → normal (explicit `priority` wins).
+`GET /v1/tasks?view=all|today|upcoming|someday|done&tz=<IANA>` (today = due today or overdue; upcoming = next 14 days after today; someday = no date) ·
+`GET /v1/tasks/summary?tz=` → `{ today_date, overdue, today, upcoming, open, done }` · `POST /v1/tasks {title, due_date?, due_time?, priority?, notes?}` ·
+`GET|PATCH|DELETE /v1/tasks/:id` · `DELETE /v1/tasks/done` (clear completed).
+
+**Vault** (private files, any type ≤ 25 MB, 500 MB/user via `VAULT_QUOTA_BYTES`) — VaultItem = `{ id, name, mime, size, url, encrypted, created_at, updated_at }`.
+`POST /v1/vault` multipart `file` (+ optional text fields `name`, `nonce` before the file) · `GET /v1/vault?q=&type=image|video|audio|pdf|other` ·
+`GET /v1/vault/usage` → `{ used_bytes, item_count, quota_bytes, max_file_bytes }` · `GET|PATCH {name}|DELETE /v1/vault/:id` ·
+`GET /v1/vault/:id/download` (Bearer header or `?token=`; `?inline=1` to display; `private, no-store`, CSP sandbox).
+Bytes are stored privately and never served by `/v1/attachments/:id`. `nonce` is reserved for client-side encryption later.
 
 **Health** — `GET /health` → `{ ok: true, db: "postgres"|"pglite", redis: "on"|"off" }`.
 
