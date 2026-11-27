@@ -145,6 +145,39 @@ CREATE TABLE IF NOT EXISTS pins (
     id: "003_last_seen",
     sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen_at timestamptz`,
   },
+  {
+    id: "004_moments",
+    sql: `
+CREATE TABLE IF NOT EXISTS moments (
+  id uuid PRIMARY KEY,
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  kind text NOT NULL,
+  text text NOT NULL DEFAULT '',
+  background text,
+  attachment_id uuid REFERENCES attachments(id) ON DELETE SET NULL,
+  visibility text NOT NULL DEFAULT 'all_friends',
+  audience uuid[] NOT NULL DEFAULT '{}',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  expires_at timestamptz NOT NULL
+);
+CREATE INDEX IF NOT EXISTS moments_user_idx ON moments(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS moments_expires_idx ON moments(expires_at);
+
+CREATE TABLE IF NOT EXISTS moment_views (
+  moment_id uuid NOT NULL REFERENCES moments(id) ON DELETE CASCADE,
+  viewer_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  viewed_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (moment_id, viewer_id)
+);
+
+CREATE TABLE IF NOT EXISTS moment_settings (
+  user_id uuid PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  visibility text NOT NULL DEFAULT 'all_friends',
+  audience uuid[] NOT NULL DEFAULT '{}',
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+`,
+  },
 ];
 
 export async function migrate(db: Db, log: (m: string) => void): Promise<void> {

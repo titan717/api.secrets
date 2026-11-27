@@ -1,4 +1,4 @@
-import type { User, MessageView, Reaction, Conversation, Dock, Channel, DockRole } from "@secrets/shared";
+import type { Attachment, User, MessageView, Reaction, Conversation, Dock, Channel, DockRole } from "@secrets/shared";
 import type { Queryable } from "../db/index.js";
 import { db } from "../db/index.js";
 import { iso } from "./http.js";
@@ -172,4 +172,12 @@ export async function dockView(dockId: string, viewerId: string | null, q: Query
   const rows = await q.query(`SELECT * FROM docks WHERE id = $1`, [dockId]);
   if (!rows.length) return null;
   return (await dockViews(rows, viewerId, q))[0];
+}
+
+export function attachmentView(r: any): Attachment {
+  const a: Attachment = { id: r.id, url: `/v1/attachments/${r.id}`, mime: r.mime, size: Number(r.size) };
+  if (r.width) a.width = Number(r.width);
+  if (r.height) a.height = Number(r.height);
+  if (r.name) a.name = r.name;
+  return a;
 }

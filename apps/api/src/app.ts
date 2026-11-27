@@ -17,6 +17,7 @@ import { messageRoutes } from "./modules/messages/routes.js";
 import { dockRoutes } from "./modules/docks/routes.js";
 import { attachmentRoutes } from "./modules/attachments/routes.js";
 import { realtimeRoutes } from "./modules/realtime/ws.js";
+import { momentRoutes } from "./modules/moments/routes.js";
 
 function findWebDist(): string | null {
   const here = path.dirname(fileURLToPath(import.meta.url));
@@ -66,6 +67,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(dockRoutes);
   await app.register(attachmentRoutes);
   await app.register(realtimeRoutes);
+  await app.register(momentRoutes);
 
   const webDist = findWebDist();
   if (webDist) {
