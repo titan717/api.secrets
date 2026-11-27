@@ -178,6 +178,33 @@ CREATE TABLE IF NOT EXISTS moment_settings (
 );
 `,
   },
+  {
+    id: "005_notes",
+    sql: `
+CREATE TABLE IF NOT EXISTS note_folders (
+  id uuid PRIMARY KEY,
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  position integer NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS note_folders_user_idx ON note_folders(user_id);
+
+CREATE TABLE IF NOT EXISTS notes (
+  id uuid PRIMARY KEY,
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  folder_id uuid REFERENCES note_folders(id) ON DELETE SET NULL,
+  title text NOT NULL DEFAULT '',
+  body text NOT NULL DEFAULT '',
+  tags text[] NOT NULL DEFAULT '{}',
+  pinned boolean NOT NULL DEFAULT false,
+  starred boolean NOT NULL DEFAULT false,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS notes_user_idx ON notes(user_id, updated_at DESC);
+`,
+  },
 ];
 
 export async function migrate(db: Db, log: (m: string) => void): Promise<void> {
