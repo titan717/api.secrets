@@ -8,6 +8,7 @@ import { useSettings } from "../../stores/settings";
 import { useUi } from "../../stores/ui";
 import { useCalls } from "../../stores/calls";
 import { WALLPAPERS } from "../../lib/theme";
+import { lastSeenLabel } from "../../lib/time";
 import { Avatar, GroupAvatar, IconButton } from "../../ui";
 import { MessageList } from "./MessageList";
 import { Composer } from "./Composer";
@@ -36,6 +37,7 @@ export function ChatView({ conversationId, channel, lookupExtra, canModerate = f
   const conv = useChat((s) => s.conversations[conversationId]);
   const users = useChat((s) => s.users);
   const presence = useChat((s) => s.presence);
+  const lastSeen = useChat((s) => s.lastSeen);
   const typing = useChat((s) => s.typing[conversationId]);
   const { ensureConversation, loadMessages, setActive } = useChat.getState();
   const me = useSession((s) => s.user);
@@ -74,7 +76,7 @@ export function ChatView({ conversationId, channel, lookupExtra, canModerate = f
   let subtitle: ReactNode = null;
   if (typers.length) subtitle = <span className="accent-text">{typers.length === 1 ? `${isGroup ? (lookupUser(typers[0])?.display_name.split(" ")[0] ?? "Someone") + " is " : ""}typing…` : `${typers.length} people typing…`}</span>;
   else if (channel) subtitle = channel.topic || channel.dockName;
-  else if (conv?.kind === "dm" && peer) subtitle = presence[peer.id] ? <span className="online-text">Online</span> : `@${peer.username}`;
+  else if (conv?.kind === "dm" && peer) subtitle = presence[peer.id] ? <span className="online-text">Online</span> : lastSeenLabel(lastSeen[peer.id]) ?? `@${peer.username}`;
   else if (conv) subtitle = `${conv.members.length} members`;
 
   const call = (kind: "voice" | "video") => void startCall({ conversation_id: conversationId, kind, title: channel ? `#${channel.name}` : title });

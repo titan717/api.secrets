@@ -22,6 +22,7 @@ interface ChatState {
   pending: Record<string, PendingMsg>;
   typing: Record<string, Record<string, number>>;
   presence: Record<string, boolean>;
+  lastSeen: Record<string, string>;
   reads: Record<string, Record<string, string>>; // conv -> user -> message created_at
   users: Record<string, User>;
   status: WsStatus;
@@ -258,7 +259,7 @@ export const useChat = create<ChatState>((set, get) => {
         break;
       }
       case "presence":
-        set({ presence: { ...get().presence, [f.user_id]: f.online } });
+        set({ presence: { ...get().presence, [f.user_id]: f.online }, ...(f.last_seen ? { lastSeen: { ...get().lastSeen, [f.user_id]: f.last_seen } } : {}) });
         break;
       case "error":
         if (f.client_msg_id) setPending(f.client_msg_id, { status: "failed", error: f.message });
@@ -294,6 +295,7 @@ export const useChat = create<ChatState>((set, get) => {
     pending: {},
     typing: {},
     presence: {},
+    lastSeen: {},
     reads: {},
     users: {},
     status: "idle",
@@ -310,11 +312,16 @@ export const useChat = create<ChatState>((set, get) => {
         get().rememberUsers(list.flatMap((c) => c.members));
         const ids = [...new Set(list.flatMap((c) => c.members.map((m) => m.id)))].filter((i) => i !== me());
         if (ids.length)
-          apiRaw<Record<string, boolean> | { user_id: string; online: boolean }[]>("GET /v1/presence", { query: { ids: ids.slice(0, 200).join(",") } })
+          apiRaw<Record<string, boolean> | { user_id: string; online: boolean; last_seen?: string | null }[]>("GET /v1/presence", { query: { ids: ids.slice(0, 200).join(",") } })
             .then((r) => {
               const presence = { ...get().presence };
-              if (Array.isArray(r)) for (const p of r) presence[p.user_id] = p.online;
-              set({ presence });
+              const lastSeen = { ...get().lastSeen };
+              if (Array.isArray(r))
+                for (const p of r) {
+                  presence[p.user_id] = p.online;
+                  if (p.last_seen) lastSeen[p.user_id] = p.last_seen;
+                }
+              set({ presence, lastSeen });
             })
             .catch(() => {});
       } catch (e) {
@@ -503,7 +510,7 @@ export const useChat = create<ChatState>((set, get) => {
 
     reset: () => {
       lastTypingSent = {};
-      set({ conversations: {}, convLoaded: false, messages: {}, hasMore: {}, pending: {}, typing: {}, presence: {}, reads: {}, users: {}, activeId: null });
+      set({ conversations: {}, convLoaded: false, messages: {}, hasMore: {}, pending: {}, typing: {}, presence: {}, lastSeen: {}, reads: {}, users: {}, activeId: null });
     },
   };
 });

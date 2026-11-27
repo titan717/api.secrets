@@ -42,3 +42,18 @@ export function duration(ms: number): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return h ? `${h}:${pad(m % 60)}:${pad(s % 60)}` : `${m}:${pad(s % 60)}`;
 }
+
+/** "last seen 5m ago" style label. */
+export function lastSeenLabel(iso: string | undefined | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  const mins = Math.round((Date.now() - d.getTime()) / 60000);
+  if (mins < 1) return "last seen just now";
+  if (mins < 60) return `last seen ${mins}m ago`;
+  const now = new Date();
+  if (sameDay(d, now)) return `last seen today at ${clock(iso)}`;
+  const y = new Date(now);
+  y.setDate(now.getDate() - 1);
+  if (sameDay(d, y)) return `last seen yesterday at ${clock(iso)}`;
+  return `last seen ${d.toLocaleDateString([], { month: "short", day: "numeric" })}`;
+}
