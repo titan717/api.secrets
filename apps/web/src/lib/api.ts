@@ -35,11 +35,28 @@ export interface CallOpts<K extends RouteKey> {
 /** Typed REST call against the shared Routes contract. */
 export async function api<K extends RouteKey>(route: K, opts: CallOpts<K> = {}): Promise<ResOf<K>> {
   const [method, rawPath] = (route as string).split(" ") as [Method<K>, PathOf<K>];
+  return request(method, rawPath, opts as RawOpts) as Promise<ResOf<K>>;
+}
+
+interface RawOpts {
+  params?: Record<string, string>;
+  query?: Record<string, unknown>;
+  body?: unknown;
+  signal?: AbortSignal;
+}
+
+/** Untyped call for API extras not (yet) in the shared Routes map. */
+export function apiRaw<T>(route: string, opts: RawOpts = {}): Promise<T> {
+  const [method, path] = route.split(" ");
+  return request(method, path, opts) as Promise<T>;
+}
+
+async function request(method: string, rawPath: string, opts: RawOpts): Promise<unknown> {
   let path: string = rawPath;
   for (const [k, v] of Object.entries(opts.params ?? {})) path = path.replace(`:${k}`, encodeURIComponent(v));
   if (opts.query) {
     const qs = new URLSearchParams();
-    for (const [k, v] of Object.entries(opts.query as Record<string, unknown>)) {
+    for (const [k, v] of Object.entries(opts.query)) {
       if (v !== undefined && v !== null && v !== "") qs.set(k, String(v));
     }
     const s = qs.toString();
@@ -71,10 +88,10 @@ export async function api<K extends RouteKey>(route: K, opts: CallOpts<K> = {}):
     }
     throw new HttpError(res.status, err.error ?? "http_error", err.message ?? `Request failed (${res.status})`);
   }
-  if (res.status === 204) return undefined as ResOf<K>;
+  if (res.status === 204) return undefined;
   const ct = res.headers.get("content-type") ?? "";
-  if (ct.includes("application/json")) return (await res.json()) as ResOf<K>;
-  return (await res.blob()) as unknown as ResOf<K>;
+  if (ct.includes("application/json")) return await res.json();
+  return await res.blob();
 }
 
 export function errorMessage(e: unknown): string {

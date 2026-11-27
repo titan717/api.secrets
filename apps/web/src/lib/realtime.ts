@@ -20,6 +20,8 @@ export class Realtime {
   private handlers = new Set<Handler>();
   private statusHandlers = new Set<StatusHandler>();
   private onOpenHooks = new Set<() => void>();
+  /** Called when the server rejects our token (close code 4001). */
+  onAuthFailed: () => void = () => {};
   status: WsStatus = "idle";
 
   constructor() {
@@ -118,9 +120,15 @@ export class Realtime {
       }
       this.handlers.forEach((h) => h(f));
     };
-    ws.onclose = () => {
+    ws.onclose = (ev) => {
       clearInterval(this.watchdog);
       if (this.ws === ws) this.ws = null;
+      if (ev.code === 4001) {
+        this.token = null;
+        this.setStatus("idle");
+        this.onAuthFailed();
+        return;
+      }
       if (this.token) this.scheduleRetry();
     };
     ws.onerror = () => {

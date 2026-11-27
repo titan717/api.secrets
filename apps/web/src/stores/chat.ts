@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { Conversation, MessageBody, MessageView, ServerFrame, User } from "@secrets/shared";
 import { openBody, sealBody } from "@secrets/shared";
-import { api, errorMessage, HttpError } from "../lib/api";
+import { api, apiRaw, errorMessage, HttpError } from "../lib/api";
 import { uuid } from "../lib/id";
 import { loadLastSync, loadOutbox, saveLastSync, saveOutbox, type PendingMsg } from "../lib/outbox";
 import { realtime, type WsStatus } from "../lib/realtime";
@@ -35,6 +35,10 @@ interface ChatState {
   retry: (clientMsgId: string) => void;
   discard: (clientMsgId: string) => void;
   react: (messageId: string, emoji: string) => Promise<void>;
+  edit: (messageId: string, body: MessageBody) => Promise<void>;
+  remove: (messageId: string) => Promise<void>;
+  pin: (messageId: string, on: boolean) => Promise<void>;
+  applyMessage: (m: MessageView) => void;
   setActive: (id: string | null) => void;
   markRead: (conversationId: string) => void;
   sendTyping: (conversationId: string) => void;
@@ -242,6 +246,16 @@ export const useChat = create<ChatState>((set, get) => {
         set({ conversations });
         break;
       }
+      case "user.update": {
+        get().rememberUsers([f.user]);
+        if (f.user.id === me()) useSession.getState().setUser(f.user);
+        const conversations = { ...get().conversations };
+        for (const [id, c] of Object.entries(conversations)) {
+          if (c.members.some((m) => m.id === f.user.id)) conversations[id] = { ...c, members: c.members.map((m) => (m.id === f.user.id ? f.user : m)) };
+        }
+        set({ conversations });
+        break;
+      }
       case "presence":
         set({ presence: { ...get().presence, [f.user_id]: f.online } });
         break;
@@ -259,6 +273,10 @@ export const useChat = create<ChatState>((set, get) => {
     frameListeners.forEach((l) => l(f));
   });
   realtime.onStatus((s) => set({ status: s }));
+  realtime.onAuthFailed = () => {
+    useSession.getState().clear();
+    toast.info("Your session ended. Please sign in again.");
+  };
   realtime.onOpen(() => {
     const uid = me();
     realtime.send({ t: "sync", since: uid ? loadLastSync(uid) : null });
@@ -289,6 +307,15 @@ export const useChat = create<ChatState>((set, get) => {
         for (const c of Object.values(get().conversations)) if (c.kind === "channel" && !conversations[c.id]) conversations[c.id] = c;
         set({ conversations, convLoaded: true, convError: null });
         get().rememberUsers(list.flatMap((c) => c.members));
+        const ids = [...new Set(list.flatMap((c) => c.members.map((m) => m.id)))].filter((i) => i !== me());
+        if (ids.length)
+          apiRaw<Record<string, boolean> | { user_id: string; online: boolean }[]>("GET /v1/presence", { query: { ids: ids.slice(0, 200).join(",") } })
+            .then((r) => {
+              const presence = { ...get().presence };
+              if (Array.isArray(r)) for (const p of r) presence[p.user_id] = p.online;
+              set({ presence });
+            })
+            .catch(() => {});
       } catch (e) {
         set({ convLoaded: true, convError: errorMessage(e) });
       }
@@ -397,6 +424,47 @@ export const useChat = create<ChatState>((set, get) => {
           set({ messages: { ...get().messages, [cid]: mergeMessages(get().messages[cid], [updated as MessageView]) } });
       } catch (e) {
         set({ messages: { ...get().messages, [cid]: mergeMessages(get().messages[cid], [msg]) } });
+        toast.error(errorMessage(e));
+      }
+    },
+
+    applyMessage: (m) => {
+      const list = get().messages[m.conversation_id];
+      if (list) set({ messages: { ...get().messages, [m.conversation_id]: mergeMessages(list, [m]) } });
+      const c = get().conversations[m.conversation_id];
+      if (c?.last_message?.id === m.id) get().upsertConversation({ ...c, last_message: m });
+    },
+
+    edit: async (messageId, body) => {
+      try {
+        const m = await apiRaw<MessageView>("PATCH /v1/messages/:id", { params: { id: messageId }, body: sealBody(body) });
+        get().applyMessage(m);
+      } catch (e) {
+        toast.error(errorMessage(e));
+      }
+    },
+
+    remove: async (messageId) => {
+      try {
+        const m = await apiRaw<MessageView>("DELETE /v1/messages/:id", { params: { id: messageId } });
+        if (m && m.id) get().applyMessage(m);
+      } catch (e) {
+        toast.error(errorMessage(e));
+      }
+    },
+
+    pin: async (messageId, on) => {
+      try {
+        const m = await apiRaw<MessageView | { ok: true }>(`${on ? "POST" : "DELETE"} /v1/messages/:id/pin`, { params: { id: messageId } });
+        if (m && "id" in m) get().applyMessage(m);
+        else {
+          for (const list of Object.values(get().messages)) {
+            const found = list.find((x) => x.id === messageId);
+            if (found) get().applyMessage({ ...found, pinned: on });
+          }
+        }
+        toast.success(on ? "Pinned" : "Unpinned");
+      } catch (e) {
         toast.error(errorMessage(e));
       }
     },
