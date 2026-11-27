@@ -45,7 +45,7 @@
 
 /* Editor */
 .nedit { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--surface-1); }
-.ne { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.ne { flex: 1; min-height: 0; display: flex; flex-direction: column; container-type: inline-size; }
 .ne-top { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-2) var(--s-4); border-bottom: 1px solid var(--border); min-height: 52px; }
 .ne-back { display: none; }
 .ne-folder { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 4px 0 10px; border-radius: var(--r-pill); background: var(--surface-2); color: var(--text-3); font-size: var(--text-xs); }
@@ -76,7 +76,9 @@
 .ne-tag button:hover { background: var(--surface-4); color: var(--text); }
 .ne-tag-input { background: transparent; border: 0; outline: 0; font-size: var(--text-xs); color: var(--text); width: 90px; height: 24px; }
 .ne-tag-input::placeholder { color: var(--text-3); }
-.ne-toolbar { display: flex; align-items: center; gap: 2px; padding: 6px 0; margin: var(--s-2) 0 var(--s-2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--surface-1); z-index: 2; flex-wrap: wrap; }
+.ne-toolbar { display: flex; align-items: center; gap: 2px; padding: 6px 0; margin: var(--s-2) 0 var(--s-2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--surface-1); z-index: 2; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+.ne-toolbar::-webkit-scrollbar { display: none; }
+@container (max-width: 600px) { .ne-mode .tab span { display: none; } .ne-mode .tab { padding: 0 9px; } .ne-tsep { margin: 0 2px; } }
 .ne-tsep { width: 1px; height: 18px; background: var(--border-strong); margin: 0 6px; }
 .ne-mode { padding: 3px; }
 .ne-mode .tab { height: 28px; flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; font-size: var(--text-xs); }

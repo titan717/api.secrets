@@ -414,10 +414,10 @@ export function NoteEditor({
             <span className="grow" />
             <div className="ne-mode tabs tabs-pill" role="tablist">
               <button role="tab" aria-selected={mode === "write"} className={`tab ${mode === "write" ? "is-active" : ""}`} onClick={() => setMode("write")}>
-                <PenLine size={14} /> Write
+                <PenLine size={14} /> <span>Write</span>
               </button>
               <button role="tab" aria-selected={mode === "read"} className={`tab ${mode === "read" ? "is-active" : ""}`} onClick={() => (void flush(), setMode("read"))}>
-                <Eye size={14} /> Preview
+                <Eye size={14} /> <span>Preview</span>
               </button>
             </div>
           </div>

@@ -2,8 +2,8 @@
 .mrow { display: flex; gap: var(--s-3); overflow-x: auto; padding: var(--s-3) var(--s-4) var(--s-2); scrollbar-width: none; }
 .mrow::-webkit-scrollbar { display: none; }
 .mrow-item { position: relative; flex: none; }
-.mrow-btn { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 64px; }
-.mrow-name { font-size: 11px; color: var(--text-3); max-width: 64px; }
+.mrow-btn { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 66px; }
+.mrow-name { font-size: 11px; color: var(--text-3); max-width: 70px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mrow-name.is-new { color: var(--text); font-weight: 500; }
 .mrow-add { position: absolute; left: 41px; top: 39px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-fill); color: #fff; box-shadow: 0 0 0 2.5px var(--surface-0); transition: transform var(--t-fast) var(--ease-spring); }
 .mrow-add:hover { transform: scale(1.1); }
