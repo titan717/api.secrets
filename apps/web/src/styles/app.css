@@ -76,7 +76,7 @@
 .auth-points li { display: flex; align-items: center; gap: 12px; }
 .auth-points svg { color: #c084fc; }
 .auth-hero-foot { display: inline-flex; align-items: center; gap: 8px; color: #c084fc; font-weight: 500; font-size: var(--text-sm); }
-.auth-hero-ghost { position: absolute; right: -30px; bottom: 60px; opacity: .9; width: clamp(160px, 18vw, 300px); height: auto; }
+.auth-hero-ghost { display: none; position: absolute; right: -30px; bottom: 60px; opacity: .9; width: clamp(160px, 18vw, 300px); height: auto; }
 .auth-main { position: relative; display: grid; place-items: center; padding: var(--s-8) var(--s-6); }
 .auth-card { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: var(--s-4); animation: rise var(--t-slow) var(--ease-out); }
 .auth .input-box { background: rgba(255,255,255,.04); border-color: rgba(255,255,255,.09); }

@@ -16,11 +16,12 @@ function ConvRow({ c, active }: { c: Conversation; active: boolean }) {
   const users = useChat((s) => s.users);
   const presence = useChat((s) => s.presence);
   const typing = useChat((s) => s.typing[c.id]);
-  const pending = useChat((s) => Object.values(s.pending).filter((p) => p.conversation_id === c.id));
+  const allPending = useChat((s) => s.pending);
+  const pending = useMemo(() => Object.values(allPending).filter((p) => p.conversation_id === c.id), [allPending, c.id]);
   const title = conversationTitle(c, users, me);
   const peer = conversationPeer(c, me);
   const typers = Object.keys(typing ?? {}).filter((u) => u !== me);
-  const lastPending = pending.sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
+  const lastPending = [...pending].sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
   const lastAt = lastPending && (!c.last_message || lastPending.created_at > c.last_message.created_at) ? lastPending.created_at : c.last_message?.created_at;
   let preview = previewText(c.last_message);
   if (lastPending && lastAt === lastPending.created_at) {

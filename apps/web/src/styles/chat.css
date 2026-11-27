@@ -1,13 +1,13 @@
 /* ================= Split layout (list + detail) ================= */
-.split { flex: 1; min-height: 0; display: grid; grid-template-columns: var(--list-w) 1fr; }
-.split-list { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--border); background: var(--surface-0); }
+.split { flex: 1; min-height: 0; display: grid; grid-template-columns: var(--list-w) minmax(0, 1fr); }
+.split-list { display: flex; flex-direction: column; min-height: 0; min-width: 0; border-right: 1px solid var(--border); background: var(--surface-0); }
 .split-detail { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--surface-0); }
 .detail-empty { flex: 1; display: grid; place-items: center; background: radial-gradient(600px 400px at 50% 40%, color-mix(in oklab, var(--accent) 8%, transparent), transparent 70%); }
 .mobile-only { display: none !important; }
 @media (max-width: 860px) {
   .mobile-only { display: flex !important; }
   .desktop-only { display: none !important; }
-  .split { grid-template-columns: 1fr; }
+  .split { grid-template-columns: minmax(0, 1fr); }
   .split .split-detail { display: none; }
   .split.has-detail .split-list { display: none; }
   .split.has-detail .split-detail { display: flex; }
@@ -103,7 +103,7 @@
 .msg-avatar { width: 30px; flex: none; }
 .msg-stack { display: flex; flex-direction: column; max-width: min(72%, 560px); min-width: 0; position: relative; transition: transform var(--t-med) var(--ease-out); }
 .msg-row.is-mine .msg-stack { align-items: flex-end; }
-@media (max-width: 860px) { .msg-stack { max-width: 84%; } }
+@media (max-width: 860px) { .msg-stack { max-width: 86%; } .msg-row .bubble { max-width: 100%; } }
 .msg-name { font-size: 12px; font-weight: 600; color: color-mix(in oklab, var(--accent) 65%, var(--text)); margin: 0 0 3px 12px; }
 .swipe-reply { position: absolute; left: -34px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-3); color: var(--text); }
 
