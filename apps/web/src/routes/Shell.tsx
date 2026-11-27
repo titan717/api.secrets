@@ -22,7 +22,7 @@ const PRIMARY = [
 const SECONDARY = [
   { to: "/notes", label: "Notes", icon: NotebookPen, soon: false },
   { to: "/tasks", label: "Tasks", icon: ListChecks, soon: false },
-  { to: "/vault", label: "Vault", icon: Vault, soon: true },
+  { to: "/vault", label: "Vault", icon: Vault, soon: false },
 ];
 
 export function useUnreadTotal() {

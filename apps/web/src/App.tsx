@@ -18,6 +18,7 @@ import { UserPage } from "./routes/profile/UserPage";
 const MomentsPage = lazy(() => import("./routes/moments"));
 const NotesPage = lazy(() => import("./routes/notes"));
 const TasksPage = lazy(() => import("./routes/tasks"));
+const VaultPage = lazy(() => import("./routes/vault"));
 const DocksPage = lazy(() => import("./routes/docks/DocksPage").then((m) => ({ default: m.DocksPage })));
 const AiPage = lazy(() => import("./routes/ai/AiPage").then((m) => ({ default: m.AiPage })));
 const CallsPage = lazy(() => import("./routes/calls/CallsPage").then((m) => ({ default: m.CallsPage })));
@@ -110,7 +111,7 @@ export function App() {
             <Route path="/notes" element={<NotesPage />} />
             <Route path="/notes/:id" element={<NotesPage />} />
             <Route path="/tasks" element={<TasksPage />} />
-            <Route path="/vault" element={<ComingSoon kind="vault" />} />
+            <Route path="/vault" element={<VaultPage />} />
             <Route path="/notifications" element={<ComingSoon kind="notifications" />} />
           </Route>
           <Route path="/u/:username" element={<UserPage />} />
