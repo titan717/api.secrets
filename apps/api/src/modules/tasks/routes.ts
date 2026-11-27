@@ -4,6 +4,7 @@
  * Date views are computed in the caller's timezone (?tz=Asia/Kolkata, default UTC).
  */
 import type { FastifyInstance } from "fastify";
+import type { Task, TaskSummary } from "@secrets/shared";
 import { db } from "../../db/index.js";
 import { badRequest, notFound, uuid, assertId, iso } from "../../lib/http.js";
 import { requireAuth } from "../auth/service.js";
@@ -63,7 +64,7 @@ function dateStr(v: unknown): string | null {
   return String(v).slice(0, 10);
 }
 
-function taskView(r: any) {
+function taskView(r: any): Task {
   return {
     id: r.id,
     title: r.title,
@@ -162,7 +163,7 @@ export async function taskRoutes(app: FastifyInstance) {
   });
 
   /** Counts for sidebar badges. */
-  app.get("/v1/tasks/summary", async (req) => {
+  app.get("/v1/tasks/summary", async (req): Promise<TaskSummary> => {
     const tz = (req.query as any)?.tz;
     const today = todayIn(typeof tz === "string" && tz ? tz : "UTC");
     const r = await db.one(

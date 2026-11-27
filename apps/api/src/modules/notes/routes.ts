@@ -1,12 +1,13 @@
 /** Notes: private markdown notes with folders, tags, pinned and starred. */
 import type { FastifyInstance } from "fastify";
+import type { Note, NoteFolder } from "@secrets/shared";
 import { db } from "../../db/index.js";
 import { badRequest, notFound, uuid, isUuid, assertId, iso } from "../../lib/http.js";
 import { requireAuth } from "../auth/service.js";
 
 const MAX_BODY = 200_000;
 
-function noteView(r: any) {
+function noteView(r: any): Note {
   return {
     id: r.id,
     folder_id: r.folder_id ?? null,
@@ -20,7 +21,7 @@ function noteView(r: any) {
   };
 }
 
-function folderView(r: any) {
+function folderView(r: any): NoteFolder {
   return { id: r.id, name: r.name, position: Number(r.position ?? 0), note_count: Number(r.note_count ?? 0), created_at: iso(r.created_at) };
 }
 

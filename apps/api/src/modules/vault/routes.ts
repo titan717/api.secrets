@@ -5,6 +5,7 @@
  * client-side encryption later (the server would then only ever see ciphertext).
  */
 import type { FastifyInstance } from "fastify";
+import type { VaultItem, VaultUsage } from "@secrets/shared";
 import { db } from "../../db/index.js";
 import { badRequest, notFound, uuid, assertId, iso, HttpError } from "../../lib/http.js";
 import { requireAuth, verifyToken, bearer } from "../auth/service.js";
@@ -13,7 +14,7 @@ import { sniffImage } from "../attachments/image.js";
 const MAX_FILE = 25 * 1024 * 1024;
 const QUOTA = Number(process.env.VAULT_QUOTA_BYTES ?? 500 * 1024 * 1024);
 
-function itemView(r: any) {
+function itemView(r: any): VaultItem {
   return {
     id: r.id,
     name: r.name,
@@ -38,7 +39,7 @@ function pickMime(declared: string | undefined, buf: Buffer): string {
   return sniffImage(buf)?.mime ?? "application/octet-stream";
 }
 
-async function usage(userId: string) {
+async function usage(userId: string): Promise<VaultUsage> {
   const r = await db.one(`SELECT COALESCE(SUM(size), 0)::bigint AS used, COUNT(*)::int AS n FROM vault_items WHERE user_id = $1`, [userId]);
   return { used_bytes: Number(r?.used ?? 0), item_count: Number(r?.n ?? 0), quota_bytes: QUOTA, max_file_bytes: MAX_FILE };
 }

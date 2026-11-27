@@ -22,7 +22,7 @@ export function closeConn(c: Conn) {
 
 /** presence frame + last_seen (ISO, additive field). */
 const presenceFrame = (user_id: string, online: boolean, last_seen: string | null): ServerFrame =>
-  ({ t: "presence", user_id, online, last_seen }) as ServerFrame;
+  ({ t: "presence", user_id, online, last_seen });
 
 const typingSeen = new Map<string, number>();
 

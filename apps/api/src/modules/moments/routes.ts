@@ -4,7 +4,7 @@
  * except (friends minus listed users). Friends = contacts (shared dm/group).
  */
 import type { FastifyInstance } from "fastify";
-import type { ServerFrame } from "@secrets/shared";
+import type { Moment, MomentGroup } from "@secrets/shared";
 import { db } from "../../db/index.js";
 import { badRequest, forbidden, notFound, uuid, isUuid, assertId, iso } from "../../lib/http.js";
 import { USER_COLS, userView, attachmentView } from "../../lib/views.js";
@@ -29,7 +29,7 @@ const CAN_SEE = (viewer: string) => `(
                   WHERE c1.user_id = mo.user_id AND c2.user_id = ${viewer}))
 )`;
 
-function momentView(r: any, viewerId: string, viewed: Set<string>, counts: Map<string, number>) {
+function momentView(r: any, viewerId: string, viewed: Set<string>, counts: Map<string, number>): Moment {
   const mine = r.user_id === viewerId;
   return {
     id: r.id,
@@ -49,7 +49,7 @@ function momentView(r: any, viewerId: string, viewed: Set<string>, counts: Map<s
   };
 }
 
-async function views(rows: any[], viewerId: string) {
+async function views(rows: any[], viewerId: string): Promise<Moment[]> {
   if (!rows.length) return [];
   const ids = rows.map((r) => r.id);
   const seen = await db.query<{ moment_id: string }>(`SELECT moment_id FROM moment_views WHERE viewer_id = $1 AND moment_id = ANY($2::uuid[])`, [viewerId, ids]);
@@ -143,9 +143,9 @@ export async function momentRoutes(app: FastifyInstance) {
     const [mine] = await views([row], req.auth.id);
     // Realtime: tell the audience (personalised view without owner-only fields).
     const viewers = await audienceOf(req.auth.id, visibility, audience);
-    const theirs = { ...mine, user_ids: undefined, view_count: undefined, viewed: false };
-    publish(viewers, { t: "moment.new", moment: theirs } as unknown as ServerFrame);
-    publish([req.auth.id], { t: "moment.new", moment: mine } as unknown as ServerFrame, req.auth.device_id);
+    const theirs: Moment = { ...mine, user_ids: undefined, view_count: undefined, viewed: false };
+    publish(viewers, { t: "moment.new", moment: theirs });
+    publish([req.auth.id], { t: "moment.new", moment: mine }, req.auth.device_id);
     reply.code(201);
     return mine;
   });
@@ -165,7 +165,7 @@ export async function momentRoutes(app: FastifyInstance) {
     const userIds = [...new Set(vs.map((v) => v.user_id))];
     const users = userIds.length ? await db.query(`SELECT ${USER_COLS} FROM users u WHERE u.id = ANY($1::uuid[])`, [userIds]) : [];
     const userBy = new Map(users.map((u: any) => [u.id, userView(u)]));
-    const groups = userIds.map((uid) => {
+    const groups: MomentGroup[] = userIds.map((uid) => {
       const moments = vs.filter((v) => v.user_id === uid);
       return {
         user: userBy.get(uid)!,
@@ -226,7 +226,7 @@ export async function momentRoutes(app: FastifyInstance) {
       ]);
       if (ins.length) {
         const me = await db.one(`SELECT ${USER_COLS} FROM users u WHERE u.id = $1`, [req.auth.id]);
-        publish([row.user_id], { t: "moment.view", moment_id: row.id, user: userView(me), viewed_at: iso(ins[0].viewed_at) } as unknown as ServerFrame);
+        publish([row.user_id], { t: "moment.view", moment_id: row.id, user: userView(me), viewed_at: iso(ins[0].viewed_at) });
       }
     }
     return { ok: true as const };
@@ -249,7 +249,7 @@ export async function momentRoutes(app: FastifyInstance) {
     const rows = await db.query(`DELETE FROM moments WHERE id = $1 AND user_id = $2 RETURNING id, visibility, audience`, [id, req.auth.id]);
     if (!rows.length) throw notFound("Moment not found");
     const viewers = await audienceOf(req.auth.id, rows[0].visibility, rows[0].audience ?? []);
-    publish([...viewers, req.auth.id], { t: "moment.remove", moment_id: id, user_id: req.auth.id } as unknown as ServerFrame);
+    publish([...viewers, req.auth.id], { t: "moment.remove", moment_id: id, user_id: req.auth.id });
     return { ok: true as const };
   });
 }
