@@ -48,6 +48,7 @@ export interface MessageView {
   reactions: Reaction[];
   edited_at?: string | null;
   deleted?: boolean;
+  pinned?: boolean;
 }
 
 export type DockVisibility = "public" | "private";

@@ -8,7 +8,7 @@
  * reconnect; the server dedupes on (sender_id, client_msg_id) and always answers `msg.ack`.
  */
 import type { MessageEnvelope } from "./envelope";
-import type { Conversation, MessageView, ID, Dock } from "./types";
+import type { Conversation, MessageView, ID, Dock, User } from "./types";
 
 export type ClientFrame =
   | { t: "pong" }
@@ -31,6 +31,7 @@ export type ServerFrame =
   | { t: "conversation.remove"; conversation_id: ID }
   | { t: "dock.upsert"; dock: Dock }
   | { t: "presence"; user_id: ID; online: boolean }
+  | { t: "user.update"; user: User }
   | { t: "error"; message: string; client_msg_id?: string };
 
 export type { MessageEnvelope };
