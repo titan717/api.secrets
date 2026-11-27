@@ -4,3 +4,4 @@ export * from "./api";
 export * from "./ws";
 export * from "./ai";
 export * from "./voice";
+export * from "./features";
